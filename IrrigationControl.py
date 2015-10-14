@@ -14,6 +14,13 @@ import weather
 # For GPIO
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
+# for message queue
+import paho.mqtt.client as mqtt
+
+mqttc = mqtt.Client("python_pub")
+# put your mosquitto message queue broker address here
+broker = '192.168.1.75'
+queue = 'watering/events'
 
 valve_pin = 5
 moisture_pin = 6
@@ -145,7 +152,11 @@ def waterCycle(t):
            updateSched()
            sleep(1)
         return
-    print("watering, gpio on at " + str(datetime.fromtimestamp(now)))
+    message = "watering, gpio on at " + str(datetime.fromtimestamp(now))
+    print(message)
+    mqttc.connect(broker,1883)
+    mqttc.publish(queue,message)
+    mqttc.disconnect()
     GPIO.output(valve_pin, GPIO.LOW)
     gWateringStatus = True
     # get weather forecast 
@@ -158,7 +169,11 @@ def waterCycle(t):
       updateSched()
       sleep(1)
     now = time.time()
-    print("Done watering, gpio off " + str(datetime.fromtimestamp(now)))
+    message = "Done watering, gpio off " + str(datetime.fromtimestamp(now))
+    print(message)
+    mqttc.connect(broker,1883)
+    mqttc.publish(queue,message)
+    mqttc.disconnect()
     GPIO.output(valve_pin, GPIO.HIGH)
     if ( gWateringStatus == "Canceled" ):	# if canceled, wait a minute before resuming normal so another cycle doesn't kick off 
         then = time.time() + 60
@@ -224,12 +239,21 @@ def updateSched():
 
 def manual():
     # the ON manual button was pressed
-    print("Manual override button pressed")
+    message = "Manual override button pressed at " + str(datetime.fromtimestamp(time.time()))
+    print(message)
+    mqttc.connect(broker,1883)
+    mqttc.publish(queue,message)
+    mqttc.disconnect()
     GPIO.output(valve_pin, GPIO.LOW)
     while (gWateringStatus == True):
       updateSched()
       sleep(1)
     GPIO.output(valve_pin, GPIO.HIGH)
+    message = "Manual watering stopped at " + str(datetime.fromtimestamp(time.time()))
+    print(message)
+    mqttc.connect(broker,1883)
+    mqttc.publish(queue,message)
+    mqttc.disconnect()
 
 
 def loop():
