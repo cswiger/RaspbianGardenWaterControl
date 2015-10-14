@@ -19,7 +19,7 @@ import paho.mqtt.client as mqtt
 
 mqttc = mqtt.Client("python_pub")
 # put your mosquitto message queue broker address here
-broker = '192.168.1.75'
+broker = '192.168.10.100'
 queue = 'watering/events'
 
 valve_pin = 5
